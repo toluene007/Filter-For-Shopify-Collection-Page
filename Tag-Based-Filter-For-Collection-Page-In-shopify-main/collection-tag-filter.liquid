@@ -1,0 +1,165 @@
+# Add this file as a new snippet "collection-tag-filter.liquid" 
+
+<div class='collection-filter-heading'>
+  <span class='close-filter'>&times;</span>
+  <b>Filter By:</b>
+</div>
+<ul class='collection-tag-filter'>
+  {% for link in linklists['collection-filter'].links %}
+  <li class='custom-tag-filter' filter-handle="{{ link.title }}" >{{ link.title }}</li>
+  <ul>
+    {% for childlink in linklists[link.handle].links %}
+        <li class='custom-tag-filter' filter-handle="{{ childlink.title }}" >{{ childlink.title }}</li>
+    {% endfor %}
+  </ul>  
+  {% endfor %}
+</ul> 
+
+<script>
+  $(document).ready(function(){
+    $("span.close-filter").click(function(){
+      $("body").removeClass("grid-with-filter-col-1-overlay");
+      $(".grid-with-filter-col-1").hide();
+    });
+    $("button.filter-btn-collection").click(function(){
+      $("body").addClass("grid-with-filter-col-1-overlay");
+      $(".grid-with-filter-col-1").show();
+    });
+
+    $(".collection-tag-filter > ul > li").parent().find("li").addClass("collection-submenu");
+
+    $(".collection-tag-filter > ul > .collection-submenu").ready(function(){
+          $(".collection-submenu").parent().prev().addClass("collection-submenu-arrow");
+    });
+
+  });
+  $(".custom-tag-filter").click(function(){
+    $("body").removeClass("grid-with-filter-col-1-overlay");
+    var title= $(this).text();
+    $("h1.section-header__title.appear-delay").html(title);
+    var tag = $(this).attr('filter-handle');
+    $(".custom-tag-filter > ul > li").removeClass('active-filter');
+
+    $(this).addClass('active-filter');
+
+    if($(window).width() <767)
+    {
+      $(".grid-with-filter-col-1 > ul > ul li").click(function(){
+        $(".grid-with-filter-col-1").hide();
+      });
+    }
+
+    getFilterProducts(tag)
+
+  });
+
+  $(".custom-tag-filter > ul > li").lo
+  
+  function getFilterProducts(tag){
+    $.ajax({
+      type: 'GET',
+      url: '/collections/all/products.json?limit=100',
+      dataType: 'json',
+      success: function(res){
+        console.log("res");
+        console.log(res);
+        if(tag == 'all')
+        {
+          var products =res.products;
+
+        }
+        else
+        {
+          var products = filterProducts(res.products, tag);
+        }
+
+        if(products.length > 0)
+        {
+          var html='';
+          products.map(function(product){
+            if(product.tags.indexOf("Hide") == -1)
+            {
+
+              var title = product.title;
+              var compare_price =product.variants[0].compare_at_price;
+
+              var price = product.variants[0].price; 
+              if(compare_price > price)
+              {
+                var saleclass="grid-product__tag--sale"; 
+              }
+              var id = product.id;
+              var handle = product.handle;
+              var image = product.images[0].src;
+              image = image.replace(".jpg","_300x.jpg").replace(".png","_300x.png");
+              var review="<span class='shopify-product-reviews-badge' data-id='"+product.id+"'></span>";
+
+              html+="<div class='grid__item grid-product small--one-half medium-up--one-third aos-init aos-animate'  data-id='"+id+"'>";
+              html+="<div class='grid-product__content'>";
+              if(compare_price > price)
+              {
+                html+=" <div class='grid-product__tag "+saleclass+"'> Sale</div>";
+              }
+              html+="<a href='/products/"+handle+"' class='grid-product__link' data-product-id='"+id+"' data-url='/products/'"+handle+"'>";
+              html+=" <div class='grid-product-image'>";
+              html+="<img src='"+image+"' class='product-image-collection' />";
+              html+="</div>";
+              html+="<div class='grid-product__meta'>";
+              html+="<div class='grid-product__title'>"+title+"</div>";
+              html+=review;
+              html+="<div class='grid-product__price'>";
+
+              if(compare_price > price)
+              {
+                html+="<del class='grid-product__price--original'>"+price+"</del>";  
+                html+="<span class='sale-price'>"+price+"</span>";
+              }
+              else
+              {
+                html+="<span>"+price+"</span>";
+              }
+
+              html+="</div></div></a>"
+              html+="</div>";            
+              html+="</div>";
+            }
+          }); 
+          $("#product-grid").empty();
+          $(".pagination").remove();
+          $("#product-grid").hide().append(html).show('normal');
+
+        }
+      },
+      error: function(status){
+
+      }
+    })
+  }
+
+  function filterProducts(products, tag) {
+
+    var filteredProducts = products.filter(function(product){
+      var products =product.tags.map(v => v.toLowerCase());
+      tag = tag.toLowerCase();
+      return products.indexOf(tag) > -1;
+    });
+    return filteredProducts;
+  }
+
+  //  Filter Sub Menu Accordian
+  $(".grid-with-filter-col-1 > ul > ul").hide();
+  $(".grid-with-filter-col-1 > ul > li.custom-tag-filter").click(function(){
+    if($(this).hasClass("show"))
+    {
+      $(this).removeClass("show");
+      $(this).next().slideUp();
+    }
+    else
+    {
+      $(".grid-with-filter-col-1 > ul > li.custom-tag-filter").removeClass("show");
+      $(".grid-with-filter-col-1 > ul > li.custom-tag-filter").next().slideUp();
+      $(this).addClass("show");
+      $(this).next().slideDown();
+    }
+  });
+</script>
